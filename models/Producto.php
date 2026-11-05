@@ -2,30 +2,64 @@
 
 abstract class Producto
 {
-    const TYPE_CAMISETA = 1;
-    const TYPE_PANTALONES = 2;
-
     // Los nombres deben coincidir con las columnas de la tabla (camisetas)
     protected $id;
+    protected $categoria_id;
     protected $nombre;
-    protected $talla;
+    protected $descripcion;
     protected $precio;
+    protected $imagen;
+    protected $activo;
 
     /**
      * fetch_object() rellena las propiedades ANTES de llamar al constructor.
      * Por eso no hay que pisarlas con valores vacíos cuando se instancia sin argumentos.
      */
-    public function __construct($nombre = null, $talla = null, $precio = null)
+    public function __construct($id = null, $categoria_id = null, $nombre = null, $descripcion = null, $precio = null, $imagen = null, $activo = null)
     {
+        if($id !== null){
+            $this->id = $id;
+        }
+        if ($categoria_id !== null) {
+            $this->categoria_id = $categoria_id;
+        }
         if ($nombre !== null) {
             $this->nombre = $nombre;
         }
-        if ($talla !== null) {
-            $this->talla = $talla;
+        if ($descripcion !== null) {
+            $this->descripcion = $descripcion;
+        }
+        if ($imagen !== null) {
+            $this->imagen = $imagen;
         }
         if ($precio !== null) {
             $this->precio = $precio;
         }
+        if ($activo !== null) {
+            $this->activo = $activo;
+        }
+    }
+
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    public function setId($id)
+    {
+        $this->id = $id;
+        return $this;
+    }
+
+    public function getCategoriaId()
+    {
+        return $this->categoria_id;
+    }
+
+    public function setCategoriaId($categoria_id)
+    {
+        $this->categoria_id = $categoria_id;
+        return $this;
     }
 
     public function getNombre()
@@ -39,14 +73,14 @@ abstract class Producto
         return $this;
     }
 
-    public function getTalla()
+    public function getDescripcion()
     {
-        return $this->talla;
+        return $this->descripcion;
     }
 
-    public function setTalla($talla)
+    public function setDescripcion($descripcion)
     {
-        $this->talla = $talla;
+        $this->descripcion = $descripcion;
         return $this;
     }
 
@@ -61,14 +95,25 @@ abstract class Producto
         return $this;
     }
 
-    public function getId()
+    public function getImagen()
     {
-        return $this->id;
+        return $this->imagen;
     }
 
-    public function setId($id)
+    public function setImagen($imagen)
     {
-        $this->id = $id;
+        $this->imagen = $imagen;
+        return $this;
+    }
+
+    public function getActivo()
+    {
+        return $this->activo;
+    }
+
+    public function setActivo($activo)
+    {
+        $this->activo = $activo;
         return $this;
     }
 }

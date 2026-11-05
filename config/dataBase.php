@@ -2,7 +2,7 @@
 
 class DataBase
 {
-    private const DB_HOST = '127.0.0.1';
+    private const DB_HOST = 'db';
     private const DB_USER = 'root';
     private const DB_PASS = 'admin';    
     private const DB_NAME = 'alejandro_db1';

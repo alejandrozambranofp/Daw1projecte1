@@ -1,15 +1,13 @@
 <?php
 
-include_once("models/CamisetaDAO.php");
-include_once("models/Camiseta.php");
+include_once("models/ProductoDAO.php");
+include_once("models/Producto.php");
 
 class productoController
 {
-    private const TALLAS_VALIDAS = ['XXL', 'XL', 'L', 'M', 'S'];
-
     public function index()
     {
-        $productos = CamisetaDAO::getAll();
+        $productos = ProductoDAO::getAll();
         $view = "views/productos/listado.php";
         include_once 'views/main.php';
     }
@@ -57,7 +55,7 @@ class productoController
             exit;
         }
 
-        $producto = CamisetaDAO::getById((int) $_GET['id']);
+        $producto = ProductoDAO::getById((int) $_GET['id']);
         if ($producto === null) {
             header('Location:?controller=producto');
             exit;
