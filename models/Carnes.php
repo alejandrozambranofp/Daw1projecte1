@@ -2,7 +2,7 @@
 
 include_once "models/Producto.php";
 
-class Receta extends Producto
+class Carnes extends Producto
 {
     public function __construct(
         $id = null,

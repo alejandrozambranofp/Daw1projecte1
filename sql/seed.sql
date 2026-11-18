@@ -148,3 +148,45 @@ INSERT INTO `productos` (`id`, `categoria_id`, `nombre`, `descripcion`, `precio`
 (8, 3, 'Sea Food Rice', 'Arroz marinero salteado con marisco variado', 12.50, 'producto-sea food rice.png', 1),
 (9, 1, 'Gourmet Cheesy Meat Bowl', 'Bol de carne gourmet cubierta de abundante queso gratinado', 15.00, 'productos-gourmet cheesy meat boul.png', 1),
 (10, 3, 'Meaty Rice Balls', 'Bolas de arroz rellenas de carne sazonada', 7.50, 'productos-meaty rice balls.png', 1);
+
+-- Ingredientes disponibles (sirven como base de receta o como extra con coste adicional)
+INSERT INTO `ingredientes` (`id`, `nombre`, `precio_extra`, `activo`) VALUES
+(1, 'Arroz Hyliano', 1.20, 1),
+(2, 'Salsa Curry Goron', 1.50, 1),
+(3, 'Zanahoria y Patata', 0.90, 1),
+(4, 'Carne de Primera', 2.80, 1),
+(5, 'Pescado Fresco de Lurelin', 2.50, 1),
+(6, 'Cangrejo Vigoroso', 3.20, 1),
+(7, 'Marisco Variado', 2.90, 1),
+(8, 'Tomate Hyliano', 0.80, 1),
+(9, 'Queso de Hatelia Fundido', 1.40, 1),
+(10, 'Aceitunas Negras', 0.70, 1),
+(11, 'Pimiento Picante', 0.85, 1),
+(12, 'Calabaza Robustez', 1.50, 1),
+(13, 'Especias Goron (Picante Extra)', 0.60, 1),
+(14, 'Semillas de Sésamo y Cebollino', 0.50, 1),
+(15, 'Huevo Frito de Cuco', 1.10, 1),
+(16, 'Mantequilla de Cabra', 0.75, 1);
+
+-- Relación de ingredientes incluidos por defecto en cada producto (cantidad = 1.00)
+INSERT INTO `producto_ingrediente` (`producto_id`, `ingrediente_id`, `cantidad`) VALUES
+-- 1. Curry Rice
+(1, 1, 1.00), (1, 2, 1.00), (1, 3, 1.00), (1, 14, 1.00),
+-- 2. Fish Pie
+(2, 5, 1.00), (2, 3, 1.00), (2, 16, 1.00), (2, 14, 1.00),
+-- 3. Hylian Tomato Pizza
+(3, 8, 1.00), (3, 9, 1.00), (3, 11, 1.00), (3, 10, 1.00),
+-- 4. Meat Curry
+(4, 1, 1.00), (4, 2, 1.00), (4, 4, 1.00), (4, 3, 1.00),
+-- 5. Meat-Stuffed Pumpkins
+(5, 12, 1.00), (5, 4, 1.00), (5, 3, 1.00), (5, 14, 1.00),
+-- 6. Pepper Steak
+(6, 4, 1.00), (6, 11, 1.00), (6, 16, 1.00), (6, 14, 1.00),
+-- 7. Crab Risotto
+(7, 1, 1.00), (7, 6, 1.00), (7, 16, 1.00), (7, 9, 1.00), (7, 14, 1.00),
+-- 8. Sea Food Rice
+(8, 1, 1.00), (8, 7, 1.00), (8, 3, 1.00), (8, 15, 1.00),
+-- 9. Gourmet Cheesy Meat Bowl
+(9, 1, 1.00), (9, 4, 1.00), (9, 9, 1.00), (9, 14, 1.00),
+-- 10. Meaty Rice Balls
+(10, 1, 1.00), (10, 4, 1.00), (10, 14, 1.00);

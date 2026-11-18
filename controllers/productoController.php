@@ -1,14 +1,35 @@
 <?php
 
-include_once("models/ProductoDAO.php");
-include_once("models/Producto.php");
+//utilizo require once para que si falla algo no siga a ciegas sino que pare la web
+//en archivos como el header o el footer se pone include por que asi se seguiran mostrando aunq de error
+//dando la posibilidad a que el usuario pueda seguir navegando
+require_once "models/ProductoDAO.php";
+require_once "models/IngredienteDAO.php";
 
 class productoController
 {
+    public function api(){
+        $metodo = $_SERVER['REQUEST_METHOD'];
+        if($metodo == "GET"){
+            if($_GET['function'] == "todos"){
+                //devuelvo todos los productos
+            }
+        }else if($metodo = "POST"){
+
+        }
+        echo json_encode($metodo);
+    }
+
     public function index()
     {
         $productos = ProductoDAO::getAll();
-        $view = "views/productos/listado.php";
+        $view = "views/productos/carta.php";
+        include_once 'views/main.php';
+    }
+
+    public function verCarta(){
+        $productos = ProductoDAO::getAll();
+        $view = "views/productos/carta.php";
         include_once 'views/main.php';
     }
 
@@ -50,18 +71,16 @@ class productoController
 
     public function show()
     {
-        if (!isset($_GET['id']) || !ctype_digit((string) $_GET['id'])) {
-            header('Location:?controller=producto');
-            exit;
-        }
+        if (isset($_GET['id'])) {
+            $id = (int) $_GET['id'];
 
-        $producto = ProductoDAO::getById((int) $_GET['id']);
-        if ($producto === null) {
-            header('Location:?controller=producto');
-            exit;
-        }
+            $producto = ProductoDAO::getById($id);
+            $todosLosIngredientes = IngredienteDAO::getAllActivos();
+            $ingredientesDelPlato = IngredienteDAO::getIdsPorProducto($id);
 
-        $view = "views/productos/show.php";
-        include_once 'views/main.php';
+            require_once "views/productos/show.php";
+        } else {
+            header("Location: index.php");
+        }
     }
 }

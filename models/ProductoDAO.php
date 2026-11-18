@@ -2,38 +2,90 @@
 
 class productoDAO
 {
+
+    private static $mapaClases = [
+        1 => 'Carnes',
+        2 => 'Bebida',
+        3 => 'Arroces',
+        4 => 'Empanados',
+        5 => 'Especiales'
+    ];
+
     public static function getAll()
     {
         $con = DataBase::connect();
         $stmt = $con->prepare("SELECT * FROM productos");
         $stmt->execute();
-        $result = $stmt->get_result();
+        $resultado = $stmt->get_result();
 
-        $lista = [];
-        while ($receta = $result->fetch_object("Receta")) {
-            $lista[] = $receta;
+        $producto = null;
+
+        $listaProductos = [];
+
+        require_once "models/Producto.php"; 
+
+        while($fila = $resultado->fetch_assoc()){
+            $cat_id = $fila['categoria_id'];
+            $nombreClase = self::$mapaClases[$cat_id];
+        
+
+            $rutaSubclase = "models/" . $nombreClase . ".php";
+            if(file_exists($rutaSubclase)){
+                require_once $rutaSubclase;
+            }
+
+            $producto = new $nombreClase(
+                $fila['id'],
+                $fila['categoria_id'],
+                $fila['nombre'],
+                $fila['descripcion'],
+                $fila['precio'],
+                $fila['imagen'],
+                $fila['activo']
+            );
+
+            $listaProductos[] = $producto;
         }
-
-        $stmt->close();
-        $con->close();
-
-        return $lista;
+        return $listaProductos;
     }
 
     public static function getById($id)
     {
         $con = DataBase::connect();
-        $stmt = $con->prepare("SELECT * FROM productos WHERE id = ?");
+        $stmt = $con->prepare("SELECT * FROM productos where id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $result = $stmt->get_result();
+        $resultado = $stmt->get_result();
 
-        $producto = $result->fetch_object("receta");
+        $producto = null;
 
-        $stmt->close();
-        $con->close();
+        $listaProductos = [];
 
-        return $producto ?: null;
+        require_once "models/Producto.php"; 
+
+        if($fila = $resultado->fetch_assoc()){
+            $cat_id = $fila['categoria_id'];
+            $nombreClase = self::$mapaClases[$cat_id];
+        
+
+            $rutaSubclase = "models/" . $nombreClase . ".php";
+            if(file_exists($rutaSubclase)){
+                require_once $rutaSubclase;
+            }
+
+            $producto = new $nombreClase(
+                $fila['id'],
+                $fila['categoria_id'],
+                $fila['nombre'],
+                $fila['descripcion'],
+                $fila['precio'],
+                $fila['imagen'],
+                $fila['activo']
+            );
+        }
+
+        return $producto;
+        
     }
 
     public static function store($producto)

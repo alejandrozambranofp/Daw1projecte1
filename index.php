@@ -3,8 +3,11 @@
 // Cargar parámetros globales y base de datos
 include_once "config/parameters.php";
 include_once "config/dataBase.php";
-include_once "models/Receta.php";
-include_once "models/Bebida.php";
+
+if(isset($_GET["action"]) && $_GET["action"] == "api"){
+    header("Access-Control-Allow-Origin: *");
+    header("Content-Type: application/json; charset=utf-8");
+}
 
 $controller_default = "productoController";
 

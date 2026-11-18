@@ -18,7 +18,9 @@
 </head>
 
 <body>
+    <?php include_once "views/header.php"; ?>
     <?php include_once $view; ?>
+    <?php include_once "views/footer.php"; ?>
 </body>
 
 </html>
