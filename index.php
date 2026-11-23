@@ -1,5 +1,7 @@
 <?php
-
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // Cargar parámetros globales y base de datos
 include_once "config/parameters.php";
 include_once "config/dataBase.php";

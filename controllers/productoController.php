@@ -78,7 +78,8 @@ class productoController
             $todosLosIngredientes = IngredienteDAO::getAllActivos();
             $ingredientesDelPlato = IngredienteDAO::getIdsPorProducto($id);
 
-            require_once "views/productos/show.php";
+            $view = "views/productos/show.php";
+            include_once "views/main.php";
         } else {
             header("Location: index.php");
         }

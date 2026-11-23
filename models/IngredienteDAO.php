@@ -51,4 +51,26 @@ class IngredienteDAO{
         return $ids;
     }
 
+    public static function create($nombre, $precio_extra)
+    {
+        $con = DataBase::connect();
+        $stmt = $con->prepare("INSERT INTO ingredientes (nombre, precio_extra, activo) VALUES (?, ?, 1)");
+        $stmt->bind_param("sd", $nombre, $precio_extra);
+        $ok = $stmt->execute();
+        $stmt->close();
+        $con->close();
+        return $ok;
+    }
+
+    public static function delete($id)
+    {
+        $con = DataBase::connect();
+        $stmt = $con->prepare("UPDATE ingredientes SET activo = 0 WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        $con->close();
+        return $ok;
+    }
+
 }

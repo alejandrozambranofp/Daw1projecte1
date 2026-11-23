@@ -1,6 +1,6 @@
 <?php
 
-class Ingrediente{
+class Ingrediente implements jsonSerialize{
 
 //atributos privados para que no se puedan cambiar los datos de estos campos por error
     private $id;
@@ -40,6 +40,16 @@ class Ingrediente{
     public function getActivo()
     {
         return $this->activo;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'id'           => (int) $this->id,
+            'nombre'       => $this->nombre,
+            'precio_extra' => (float) $this->precio_extra,
+            'activo'       => (int) $this->activo
+        ];
     }
 
 }

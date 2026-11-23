@@ -63,37 +63,132 @@
         color: #4b5563;
         font-size: 1rem;
         line-height: 1.6;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.2rem;
+    }
+
+    /* Estilos para la lista de ingredientes */
+    .ingredientes-box {
+        border-top: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 1rem 0;
+        margin-bottom: 1.2rem;
+    }
+
+    .ingredientes-box h3 {
+        margin: 0 0 0.8rem 0;
+        font-size: 1.05rem;
+        color: #111827;
+    }
+
+    .ingrediente-fila {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.45rem 0;
+        border-bottom: 1px dashed #f3f4f6;
+    }
+
+    .ingrediente-fila:last-child {
+        border-bottom: none;
+    }
+
+    .ingrediente-nombre {
+        font-weight: 500;
+        color: #1f2937;
+        font-size: 0.95rem;
+    }
+
+    .ingrediente-tag {
+        font-size: 0.75rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 4px;
+        margin-left: 0.4rem;
+    }
+
+    .tag-incluido {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+
+    .tag-extra {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .ingrediente-controles {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-qty {
+        width: 28px;
+        height: 28px;
+        border: 1px solid #d1d5db;
+        background: #f9fafb;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+    .btn-qty:hover {
+        background: #e5e7eb;
+    }
+
+    .qty-valor {
+        min-width: 20px;
+        text-align: center;
+        font-weight: 600;
     }
 
     .detalle-precio {
         font-size: 1.6rem;
         font-weight: 700;
         color: #000000;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.2rem;
     }
 
     .detalle-acciones {
         display: flex;
-        justify-content: flex-end;
+        gap: 0.8rem;
+        justify-content: space-between;
+        align-items: center;
         padding-top: 1rem;
         border-top: 1px solid #f3f4f6;
     }
 
     .btn-volver-accion {
         display: inline-block;
-        padding: 0.6rem 1.25rem;
+        padding: 0.65rem 1.1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #111827;
+        background-color: #f3f4f6;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-volver-accion:hover {
+        background-color: #e5e7eb;
+    }
+
+    .btn-carrito-accion {
+        padding: 0.7rem 1.3rem;
         font-size: 0.95rem;
         font-weight: 600;
         color: #ffffff;
         background-color: #000000;
+        border: none;
         border-radius: 6px;
-        text-decoration: none;
+        cursor: pointer;
         transition: background-color 0.2s ease, transform 0.1s ease;
     }
 
-    .btn-volver-accion:hover {
+    .btn-carrito-accion:hover {
         background-color: #d8af1d;
+        color: #000000;
         transform: translateY(-1px);
     }
 
@@ -121,16 +216,68 @@
                 <div>
                     <h1 class="detalle-titulo"><?= htmlspecialchars($producto->getNombre(), ENT_QUOTES, 'UTF-8') ?></h1>
                     <p class="detalle-descripcion"><?= htmlspecialchars($producto->getDescripcion(), ENT_QUOTES, 'UTF-8') ?></p>
-                </div>
 
-                <div>
-                    <div class="detalle-precio">
-                        <?= number_format((float) $producto->getPrecio(), 2, ',', '.') ?> €
-                    </div>
+                    <!-- FORMULARIO POST PARA ENVIAR EL PLATO PERSONALIZADO AL CARRITO -->
+                    <form action="?controller=carrito&action=add" method="POST" id="form-personalizar">
+                        <!-- Enviamos el ID del producto de forma oculta -->
+                        <input type="hidden" name="id_producto" value="<?= (int) $producto->getId() ?>">
 
-                    <div class="detalle-acciones">
-                        <a href="?controller=producto" class="btn-volver-accion">Seguir viendo la carta</a>
-                    </div>
+                        <?php if (!empty($todosLosIngredientes)): ?>
+                            <div class="ingredientes-box">
+                                <h3>Personaliza tus ingredientes</h3>
+
+                                <?php foreach ($todosLosIngredientes as $ing): ?>
+                                    <?php
+                                        $idIng = (int) $ing->getId();
+                                        // Comprobamos si este ingrediente viene incluido de serie en este plato
+                                        $esBase = in_array($idIng, $ingredientesDelPlato ?? []);
+                                        // Si viene de serie empieza en 1; si es un extra opcional empieza en 0
+                                        $cantidadInicial = $esBase ? 1 : 0;
+                                    ?>
+                                    <div class="ingrediente-fila" 
+                                         data-precio="<?= (float) $ing->getPrecioExtra() ?>" 
+                                         data-base="<?= $esBase ? 1 : 0 ?>">
+                                        <div>
+                                            <span class="ingrediente-nombre"><?= htmlspecialchars($ing->getNombre(), ENT_QUOTES, 'UTF-8') ?></span>
+                                            <?php if ($esBase): ?>
+                                                <span class="ingrediente-tag tag-incluido">Incluido (+<?= number_format($ing->getPrecioExtra(), 2, ',', '.') ?> € extra)</span>
+                                            <?php else: ?>
+                                                <span class="ingrediente-tag tag-extra">+<?= number_format($ing->getPrecioExtra(), 2, ',', '.') ?> €</span>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <div class="ingrediente-controles">
+                                            <!-- Botones type="button" para que NO envíen el formulario al hacer clic -->
+                                            <button type="button" class="btn-qty" onclick="cambiarCantidad(<?= $idIng ?>, -1)">-</button>
+                                            
+                                            <!-- Span visible para el usuario -->
+                                            <span class="qty-valor" id="vista-qty-<?= $idIng ?>"><?= $cantidadInicial ?></span>
+                                            
+                                            <button type="button" class="btn-qty" onclick="cambiarCantidad(<?= $idIng ?>, 1)">+</button>
+
+                                            <!-- Input oculto que realmente viaja en $_POST['ingredientes'][ID] -->
+                                            <input type="hidden" 
+                                                   name="ingredientes[<?= $idIng ?>]" 
+                                                   id="input-qty-<?= $idIng ?>" 
+                                                   value="<?= $cantidadInicial ?>">
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- Precio total dinámico (guardamos el precio base en data-base para calcular en JS) -->
+                        <div class="detalle-precio">
+                            Total: <span id="precio-total" data-base="<?= (float) $producto->getPrecio() ?>">
+                                <?= number_format((float) $producto->getPrecio(), 2, ',', '.') ?>
+                            </span> €
+                        </div>
+
+                        <div class="detalle-acciones">
+                            <a href="?controller=producto" class="btn-volver-accion">Seguir viendo</a>
+                            <button type="submit" class="btn-carrito-accion">Añadir al carrito</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -144,3 +291,51 @@
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+    /**
+     * Suma o resta unidades de un ingrediente y recalcula el precio total del plato
+     */
+    function cambiarCantidad(idIngrediente, delta) {
+        const input = document.getElementById('input-qty-' + idIngrediente);
+        const vista = document.getElementById('vista-qty-' + idIngrediente);
+
+        let cantidadActual = parseInt(input.value, 10);
+        let nuevaCantidad = cantidadActual + delta;
+
+        // Limitamos entre 0 (sin ingrediente) y un máximo razonable de 5 unidades
+        if (nuevaCantidad < 0) nuevaCantidad = 0;
+        if (nuevaCantidad > 5) nuevaCantidad = 5;
+
+        // Actualizamos tanto el número visible como el input oculto que se enviará por POST
+        input.value = nuevaCantidad;
+        vista.textContent = nuevaCantidad;
+
+        recalcularTotal();
+    }
+
+    /**
+     * Recorre todas las filas de ingredientes y calcula:
+     * Precio Base del plato + suma de los extras añadidos
+     */
+    function recalcularTotal() {
+        const spanTotal = document.getElementById('precio-total');
+        let total = parseFloat(spanTotal.dataset.base);
+
+        // Seleccionamos todas las filas de ingredientes
+        const filas = document.querySelectorAll('.ingrediente-fila');
+
+        filas.forEach(fila => {
+            const precioExtra = parseFloat(fila.dataset.precio);
+            const esBase = parseInt(fila.dataset.base, 10); // 1 si viene incluido, 0 si es extra
+            const cantidad = parseInt(fila.querySelector('input[type="hidden"]').value, 10);
+
+            // Solo cobramos las unidades que superen la cantidad incluida por defecto (1 si es base, 0 si es extra)
+            const unidadesCobrables = Math.max(0, cantidad - esBase);
+            total += unidadesCobrables * precioExtra;
+        });
+
+        // Formateamos con coma decimal estilo español (ej: 12,50)
+        spanTotal.textContent = total.toFixed(2).replace('.', ',');
+    }
+</script>

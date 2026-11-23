@@ -1,6 +1,6 @@
 <?php
 
-abstract class Producto
+abstract class Producto implements JsonSerializable
 {
     // Los nombres deben coincidir con las columnas de la tabla (camisetas)
     protected $id;
@@ -115,5 +115,18 @@ abstract class Producto
     {
         $this->activo = $activo;
         return $this;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'id'           => (int) $this->id,
+            'categoria_id' => (int) $this->categoria_id,
+            'nombre'       => $this->nombre,
+            'descripcion'  => $this->descripcion,
+            'precio'       => (float) $this->precio,
+            'imagen'       => $this->imagen,
+            'activo'       => (int) $this->activo
+        ];
     }
 }
