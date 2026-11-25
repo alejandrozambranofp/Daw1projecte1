@@ -1,7 +1,8 @@
 <?php
-// Importamos los DAOs para consultar el precio real del producto y de los ingredientes en la BBDD
+// Importamos los DAOs para consultar el precio real del producto, los ingredientes y guardar el pedido en BBDD
 require_once "models/ProductoDAO.php";
 require_once "models/IngredienteDAO.php";
+require_once "models/PedidoDAO.php";
 
 class carritoController
 {
@@ -123,36 +124,53 @@ class carritoController
     }
 
     /**
-     * Simula la finalización de la compra (?controller=carrito&action=confirmar)
-     * Guarda el resumen del pedido para mostrar el recibo y vacía el carrito activo
+     * Finaliza la compra (?controller=carrito&action=confirmar)
+     * Obliga a estar logueado, guarda el pedido real en MySQL y muestra el recibo
      */
     public function confirmar()
     {
-        // Si el carrito está vacío, redirigimos al carrito para evitar entrar a la pantalla de éxito sin comprar
+        // 1. Si el carrito está vacío, volvemos al carrito para evitar entrar a la pantalla de éxito sin comprar
         if (empty($_SESSION['carrito'])) {
             header("Location: index.php?controller=carrito&action=index");
             exit();
         }
 
-        // Calculamos el total final del pedido
+        // 2. Comprobamos si el usuario ha iniciado sesión; si no, lo mandamos al login para poder asociar el pedido
+        if (!isset($_SESSION['usuario'])) {
+            header("Location: index.php?controller=usuario&action=login");
+            exit();
+        }
+
+        // 3. Calculamos el total final del pedido
         $totalPedido = 0;
         foreach ($_SESSION['carrito'] as $item) {
             $totalPedido += $item['precio_unitario'] * $item['cantidad'];
         }
 
-        // Guardamos los datos del ticket en una variable local para pasársela a la vista
-        $resumenPedido = [
-            "numero" => "HYR-" . rand(1000, 9999), // Código de ticket simulado
-            "fecha"  => date("d/m/Y H:i"),
-            "items"  => $_SESSION['carrito'],
-            "total"  => $totalPedido
-        ];
+        $usuarioId = (int) $_SESSION['usuario']['id'];
 
-        // Vaciamos el carrito porque la compra ya se ha completado
-        unset($_SESSION['carrito']);
+        // 4. Guardamos el pedido real en MySQL (pedidos + pedido_detalle + pedido_detalle_ingrediente)
+        $pedidoId = PedidoDAO::crearPedido($usuarioId, $_SESSION['carrito'], $totalPedido);
 
-        // Cargamos la vista de confirmación dentro de la plantilla maestra
-        $view = "views/carrito/confirmado.php";
-        include_once "views/main.php";
+        if ($pedidoId) {
+            // Preparamos los datos del ticket con el ID real generado por MySQL
+            $resumenPedido = [
+                "numero" => "HYR-" . str_pad($pedidoId, 4, "0", STR_PAD_LEFT),
+                "fecha"  => date("d/m/Y H:i"),
+                "items"  => $_SESSION['carrito'],
+                "total"  => $totalPedido
+            ];
+
+            // Vaciamos el carrito porque la compra ya se ha guardado en BBDD
+            unset($_SESSION['carrito']);
+
+            // Cargamos la vista de confirmación dentro de la plantilla maestra
+            $view = "views/carrito/confirmado.php";
+            include_once "views/main.php";
+        } else {
+            // Si hubo un fallo en BBDD, volvemos al carrito con aviso de error
+            header("Location: index.php?controller=carrito&action=index&error=1");
+            exit();
+        }
     }
 }

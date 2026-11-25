@@ -10,6 +10,10 @@ class adminController
     // Método clásico: carga la página HTML del panel cuando entras por el navegador
     public function index()
     {
+        //aqui dejamos claro que no es peticion json y que se esta haciendo por url
+        //ya que si fuera json aun que el usuario no sea admin podria recibir datos a traves de un fetch en consola
+        //redirigiremos a login en caso de que no sea admin
+        $this->verificarAdmin(false);
         // Guardamos la ruta de la vista del panel de administración
         $view = "views/admin/admin.php";
         // Cargamos la plantilla principal (cabecera + vista + pie de página)
@@ -19,6 +23,9 @@ class adminController
     // Método API REST: no devuelve HTML, sino datos puros en JSON para JavaScript (fetch)
     public function api()
     {
+        //En el caso de que nos envie una peticion json pondremos true para pasar a la parte donde hemos
+        //puesto lo que pasara si la peticion es json que seria un error 403
+        $this->verificarAdmin(true);
         // Le avisamos al navegador que la respuesta será JSON en UTF-8 (para tildes y ñ)
         header('Content-Type: application/json; charset=utf-8');
         // Detectamos si JavaScript nos llama por GET (pedir datos) o por POST (guardar/borrar)
@@ -77,5 +84,28 @@ class adminController
 
         // Cortamos la ejecución de PHP aquí mismo para que no se imprima HTML debajo del JSON
         exit();
+    }
+
+    private function verificarAdmin($responderConJson = false)
+    {
+        // 1. Comprobamos si el usuario ha iniciado sesión Y su rol es 'admin'
+        $esAdmin = isset($_SESSION['usuario']) && ($_SESSION['usuario']['rol'] ?? '') === 'admin';
+
+        // 2. Si NO cumple ambas cosas, bloqueamos el paso:
+        if (!$esAdmin) {
+            if ($responderConJson) {
+                // Si venimos de api(), respondemos en formato JSON para JavaScript
+                header('Content-Type: application/json; charset=utf-8');
+                http_response_code(403);
+                echo json_encode([
+                    "success" => false,
+                    "mensaje" => "Acceso denegado: se requieren permisos de administrador."
+                ]);
+            } else {
+                // Si venimos de index(), redirigimos al formulario de login
+                header("Location: index.php?controller=usuario&action=login");
+            }
+            exit();
+        }
     }
 }
