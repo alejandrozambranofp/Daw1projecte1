@@ -1,6 +1,6 @@
 <?php
 
-class Ingrediente implements jsonSerialize{
+class Ingrediente implements JsonSerializable{
 
 //atributos privados para que no se puedan cambiar los datos de estos campos por error
     private $id;

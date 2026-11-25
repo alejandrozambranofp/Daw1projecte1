@@ -1,5 +1,5 @@
 // Clase modelo para guardar los datos de cada ingrediente en JavaScript
-export class Ingrediente {
+export class Ingrediente{
 
     // Constructor que recibe el objeto del JSON y guarda cada campo
     constructor(datos) {

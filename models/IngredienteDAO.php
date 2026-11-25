@@ -54,9 +54,17 @@ class IngredienteDAO{
     public static function create($nombre, $precio_extra)
     {
         $con = DataBase::connect();
-        $stmt = $con->prepare("INSERT INTO ingredientes (nombre, precio_extra, activo) VALUES (?, ?, 1)");
+
+        // Si el ingrediente ya existía en la tabla (por ejemplo, eliminado con activo = 0),
+        // lo reactivamos (activo = 1) y le ponemos el nuevo precio en vez de dar error de duplicado
+        $sql = "INSERT INTO ingredientes (nombre, precio_extra, activo) 
+                VALUES (?, ?, 1) 
+                ON DUPLICATE KEY UPDATE precio_extra = VALUES(precio_extra), activo = 1";
+
+        $stmt = $con->prepare($sql);
         $stmt->bind_param("sd", $nombre, $precio_extra);
         $ok = $stmt->execute();
+
         $stmt->close();
         $con->close();
         return $ok;

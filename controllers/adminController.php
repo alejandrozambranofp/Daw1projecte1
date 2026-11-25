@@ -69,12 +69,9 @@ class adminController
 
             // Si JavaScript pide eliminar (ocultar) un ingrediente
             } elseif ($funcion === "eliminarIngrediente") {
-                // Sacamos el ID del JSON y lo forzamos a número entero por seguridad
                 $id = (int) ($datos['id'] ?? 0);
-                // Llamamos al DAO para poner activo = 0 en MySQL (devuelve true o false)
                 $ok = IngredienteDAO::delete($id);
-                // Respondemos a JavaScript en JSON si el borrado funcionó
-                echo json_encode(["ha sido eliminado" => $ok]);
+                echo json_encode(["success" => $ok]);
             }
         }
 
