@@ -30,6 +30,27 @@ class IngredienteDAO{
         return $ingredientes;
     }
 
+    public static function getAll()
+    {
+        $con = DataBase::connect();
+        $stmt = $con->prepare("SELECT * FROM ingredientes ORDER BY activo DESC, nombre ASC");
+        $stmt->execute();
+        $resultado = $stmt->get_result();
+
+        $ingredientes = [];
+        while ($fila = $resultado->fetch_assoc()) {
+            $ingredientes[] = new Ingrediente(
+                $fila['id'],
+                $fila['nombre'],
+                $fila['precio_extra'],
+                $fila['activo']
+            );
+        }
+        $stmt->close();
+        $con->close();
+        return $ingredientes;
+    }
+
 
     //Esta funcion es necesaria para que cuando un usuario entre a algun producto en show se muestren
     //los ingredientes correspondientes ya marcados, para poder quitarlos en caso que no los desee
@@ -70,15 +91,47 @@ class IngredienteDAO{
         return $ok;
     }
 
-    public static function delete($id)
+    // PUT: actualiza el nombre y el precio extra de un ingrediente que ya existe
+    public static function update($id, $nombre, $precio_extra)
     {
         $con = DataBase::connect();
-        $stmt = $con->prepare("UPDATE ingredientes SET activo = 0 WHERE id = ?");
-        $stmt->bind_param("i", $id);
+        $stmt = $con->prepare("UPDATE ingredientes SET nombre = ?, precio_extra = ? WHERE id = ?");
+        $stmt->bind_param("sdi", $nombre, $precio_extra, $id);
         $ok = $stmt->execute();
+
         $stmt->close();
         $con->close();
         return $ok;
+    }
+
+    // PATCH: activa (1) o desactiva (0) un ingrediente sin borrarlo de la BBDD
+    public static function cambiarEstado($id, $activo)
+    {
+        $con = DataBase::connect();
+        $stmt = $con->prepare("UPDATE ingredientes SET activo = ? WHERE id = ?");
+        $stmt->bind_param("ii", $activo, $id);
+        $ok = $stmt->execute();
+
+        $stmt->close();
+        $con->close();
+        return $ok;
+    }
+
+    // DELETE: borrado físico definitivo en MySQL (si está en uso en pedidos/platos, captura el error y devuelve false)
+    public static function deleteFisico($id)
+    {
+        $con = DataBase::connect();
+        try {
+            $stmt = $con->prepare("DELETE FROM ingredientes WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $ok = $stmt->execute();
+            $stmt->close();
+            $con->close();
+            return $ok;
+        } catch (mysqli_sql_exception $e) {
+            $con->close();
+            return false;
+        }
     }
 
 }

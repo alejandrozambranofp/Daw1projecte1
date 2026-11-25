@@ -1,100 +1,245 @@
 <?php
-// Importamos el DAO de productos para poder leer platos desde MySQL
 require_once "models/productoDAO.php";
-// Importamos el DAO de ingredientes para leer, crear y borrar ingredientes en MySQL
 require_once "models/IngredienteDAO.php";
+require_once "models/UsuarioDAO.php";
 
-// Definimos la clase controladora del panel de administración
 class adminController
 {
-    // Método clásico: carga la página HTML del panel cuando entras por el navegador
     public function index()
     {
-        //aqui dejamos claro que no es peticion json y que se esta haciendo por url
-        //ya que si fuera json aun que el usuario no sea admin podria recibir datos a traves de un fetch en consola
-        //redirigiremos a login en caso de que no sea admin
         $this->verificarAdmin(false);
-        // Guardamos la ruta de la vista del panel de administración
         $view = "views/admin/admin.php";
-        // Cargamos la plantilla principal (cabecera + vista + pie de página)
         include_once "views/main.php";
     }
 
-    // Método API REST: no devuelve HTML, sino datos puros en JSON para JavaScript (fetch)
     public function api()
     {
-        //En el caso de que nos envie una peticion json pondremos true para pasar a la parte donde hemos
-        //puesto lo que pasara si la peticion es json que seria un error 403
         $this->verificarAdmin(true);
-        // Le avisamos al navegador que la respuesta será JSON en UTF-8 (para tildes y ñ)
         header('Content-Type: application/json; charset=utf-8');
-        // Detectamos si JavaScript nos llama por GET (pedir datos) o por POST (guardar/borrar)
         $metodo = $_SERVER['REQUEST_METHOD'];
+        $funcion = $_GET['function'] ?? '';
+        $datos = json_decode(file_get_contents("php://input"), true) ?? [];
 
-        // Si la petición es GET (JavaScript pide listas para rellenar las tablas)
+        // =========================================================================
+        // 1. MÉTODO GET
+        // =========================================================================
         if ($metodo === "GET") {
-            // Leemos qué lista pide la URL (?function=ingredientes o ?function=productos)
-            $funcion = $_GET['function'] ?? '';
 
-            // Si JavaScript pide los ingredientes activos
             if ($funcion === "ingredientes") {
-                // Pedimos los ingredientes a MySQL y los imprimimos convertidos a texto JSON
-                echo json_encode(IngredienteDAO::getAllActivos());
-            // Si JavaScript pide todos los productos
+                echo json_encode(IngredienteDAO::getAll());
+
             } elseif ($funcion === "productos") {
-                // Pedimos los productos a MySQL y los imprimimos convertidos a texto JSON
                 echo json_encode(productoDAO::getAll());
+
+            } elseif ($funcion === "usuarios") {
+                echo json_encode(UsuarioDAO::getAll());
+
+            } else {
+                http_response_code(400);
+                echo json_encode(["success" => false, "mensaje" => "Endpoint GET no válido"]);
             }
 
-        // Si la petición es POST (JavaScript envía datos nuevos para guardar o borrar)
+        // =========================================================================
+        // 2. MÉTODO POST
+        // =========================================================================
         } elseif ($metodo === "POST") {
-            // Leemos el paquete JSON crudo que envía fetch() y lo convertimos a array de PHP
-            $datos = json_decode(file_get_contents("php://input"), true);
-            // Leemos qué acción pide la URL (?function=crearIngrediente o eliminarIngrediente)
-            $funcion = $_GET['function'] ?? '';
 
-            // Si JavaScript pide crear un ingrediente nuevo
             if ($funcion === "crearIngrediente") {
-                // Sacamos el nombre del JSON y le quitamos espacios sobrantes a los lados
                 $nombre = trim($datos['nombre'] ?? '');
-                // Sacamos el precio extra del JSON y lo forzamos a número decimal
                 $precio = (float) ($datos['precio_extra'] ?? 0);
 
-                // Comprobamos que el nombre no venga vacío
                 if ($nombre !== '') {
-                    // Llamamos al DAO para hacer el INSERT en MySQL (devuelve true o false)
                     $ok = IngredienteDAO::create($nombre, $precio);
-                    // Respondemos a JavaScript en formato JSON si se guardó bien y el mensaje
                     echo json_encode([
                         "success" => $ok,
                         "mensaje" => $ok ? "Ingrediente añadido a la BBDD" : "Error al guardar en BBDD"
                     ]);
                 } else {
-                    // Si el nombre estaba vacío, devolvemos error en JSON sin tocar MySQL
                     echo json_encode(["success" => false, "mensaje" => "El nombre es obligatorio"]);
                 }
 
-            // Si JavaScript pide eliminar (ocultar) un ingrediente
-            } elseif ($funcion === "eliminarIngrediente") {
-                $id = (int) ($datos['id'] ?? 0);
-                $ok = IngredienteDAO::delete($id);
-                echo json_encode(["success" => $ok]);
+            } elseif ($funcion === "crearProducto") {
+                $catId       = (int) ($datos['categoria_id'] ?? 1);
+                $nombre      = trim($datos['nombre'] ?? '');
+                $descripcion = trim($datos['descripcion'] ?? '');
+                $precio      = (float) ($datos['precio'] ?? 0);
+                $imagen      = trim($datos['imagen'] ?? 'default.png');
+
+                if ($nombre !== '' && $precio > 0) {
+                    $prod = productoDAO::crearInstancia(null, $catId, $nombre, $descripcion, $precio, $imagen, 1);
+                    $ok = productoDAO::store($prod);
+
+                    echo json_encode([
+                        "success" => $ok,
+                        "mensaje" => $ok ? "Producto añadido a la carta" : "Error al guardar el producto"
+                    ]);
+                } else {
+                    echo json_encode(["success" => false, "mensaje" => "El nombre y un precio mayor a 0 son obligatorios"]);
+                }
+
+            } elseif ($funcion === "crearUsuario") {
+                $nombre   = trim($datos['nombre'] ?? '');
+                $email    = trim($datos['email'] ?? '');
+                $password = trim($datos['password'] ?? '');
+                $rol      = ($datos['rol'] ?? 'usuario') === 'admin' ? 'admin' : 'usuario';
+
+                if ($nombre !== '' && $email !== '' && $password !== '') {
+                    $ok = UsuarioDAO::createAdmin($nombre, $email, $password, $rol);
+                    echo json_encode([
+                        "success" => $ok,
+                        "mensaje" => $ok ? "Usuario creado correctamente" : "Error: puede que ese email ya esté registrado"
+                    ]);
+                } else {
+                    echo json_encode(["success" => false, "mensaje" => "Nombre, email y contraseña son obligatorios"]);
+                }
             }
+
+        // =========================================================================
+        // 3. MÉTODO PUT
+        // =========================================================================
+        } elseif ($metodo === "PUT") {
+
+            if ($funcion === "editarIngrediente") {
+                $id     = (int) ($datos['id'] ?? 0);
+                $nombre = trim($datos['nombre'] ?? '');
+                $precio = (float) ($datos['precio_extra'] ?? 0);
+
+                if ($id > 0 && $nombre !== '') {
+                    $ok = IngredienteDAO::update($id, $nombre, $precio);
+                    echo json_encode([
+                        "success" => $ok,
+                        "mensaje" => $ok ? "Ingrediente actualizado correctamente" : "Error al actualizar en BBDD"
+                    ]);
+                } else {
+                    echo json_encode(["success" => false, "mensaje" => "ID o nombre no válidos para editar"]);
+                }
+
+            } elseif ($funcion === "editarProducto") {
+                $id          = (int) ($datos['id'] ?? 0);
+                $catId       = (int) ($datos['categoria_id'] ?? 1);
+                $nombre      = trim($datos['nombre'] ?? '');
+                $descripcion = trim($datos['descripcion'] ?? '');
+                $precio      = (float) ($datos['precio'] ?? 0);
+                $imagen      = trim($datos['imagen'] ?? 'default.png');
+                $activo      = isset($datos['activo']) ? (int) $datos['activo'] : 1;
+
+                if ($id > 0 && $nombre !== '' && $precio > 0) {
+                    $prod = productoDAO::crearInstancia($id, $catId, $nombre, $descripcion, $precio, $imagen, $activo);
+                    $ok = productoDAO::update($prod);
+
+                    echo json_encode([
+                        "success" => $ok,
+                        "mensaje" => $ok ? "Producto actualizado correctamente" : "Error al actualizar el producto"
+                    ]);
+                } else {
+                    echo json_encode(["success" => false, "mensaje" => "Datos incompletos para editar el producto"]);
+                }
+
+            } elseif ($funcion === "editarUsuario") {
+                $id       = (int) ($datos['id'] ?? 0);
+                $nombre   = trim($datos['nombre'] ?? '');
+                $email    = trim($datos['email'] ?? '');
+                $password = trim($datos['password'] ?? '');
+                $rol      = ($datos['rol'] ?? 'usuario') === 'admin' ? 'admin' : 'usuario';
+
+                if ($id > 0 && $nombre !== '' && $email !== '') {
+                    $ok = UsuarioDAO::update($id, $nombre, $email, $password, $rol);
+                    echo json_encode([
+                        "success" => $ok,
+                        "mensaje" => $ok ? "Usuario actualizado correctamente" : "Error al actualizar (revisa que el email no esté duplicado)"
+                    ]);
+                } else {
+                    echo json_encode(["success" => false, "mensaje" => "ID, nombre y email son obligatorios"]);
+                }
+            }
+
+        // =========================================================================
+        // 4. MÉTODO PATCH
+        // =========================================================================
+        } elseif ($metodo === "PATCH") {
+
+            if ($funcion === "cambiarEstadoIngrediente") {
+                $id     = (int) ($datos['id'] ?? 0);
+                $activo = (int) ($datos['activo'] ?? 0);
+
+                $ok = IngredienteDAO::cambiarEstado($id, $activo);
+                echo json_encode([
+                    "success" => $ok,
+                    "mensaje" => $ok ? "Estado del ingrediente actualizado" : "Error al cambiar estado"
+                ]);
+
+            } elseif ($funcion === "cambiarEstadoProducto") {
+                $id     = (int) ($datos['id'] ?? 0);
+                $activo = (int) ($datos['activo'] ?? 0);
+
+                $ok = productoDAO::cambiarEstado($id, $activo);
+                echo json_encode([
+                    "success" => $ok,
+                    "mensaje" => $ok ? "Estado del producto actualizado" : "Error al cambiar estado"
+                ]);
+
+            } elseif ($funcion === "cambiarEstadoUsuario") {
+                echo json_encode([
+                    "success" => false,
+                    "mensaje" => "La tabla usuarios no tiene columna 'activo'; usa Editar para cambiar el rol o Eliminar."
+                ]);
+            }
+
+        // =========================================================================
+        // 5. MÉTODO DELETE
+        // =========================================================================
+        } elseif ($metodo === "DELETE") {
+
+            if ($funcion === "eliminarIngrediente") {
+                $id = (int) ($datos['id'] ?? 0);
+                $ok = IngredienteDAO::deleteFisico($id);
+                echo json_encode([
+                    "success" => $ok,
+                    "mensaje" => $ok
+                        ? "Ingrediente eliminado definitivamente"
+                        : "No se puede eliminar: ya está asociado a platos o pedidos. Desactívalo en su lugar."
+                ]);
+
+            } elseif ($funcion === "eliminarProducto") {
+                $id = (int) ($datos['id'] ?? 0);
+                $ok = productoDAO::destroy($id);
+                echo json_encode([
+                    "success" => $ok,
+                    "mensaje" => $ok
+                        ? "Producto eliminado definitivamente"
+                        : "No se puede eliminar: ya aparece en pedidos realizados. Desactívalo en su lugar."
+                ]);
+
+            } elseif ($funcion === "eliminarUsuario") {
+                $id = (int) ($datos['id'] ?? 0);
+
+                if ($id === (int) ($_SESSION['usuario']['id'] ?? 0)) {
+                    echo json_encode(["success" => false, "mensaje" => "No puedes eliminar tu propia cuenta de administrador."]);
+                } else {
+                    $ok = UsuarioDAO::deleteFisico($id);
+                    echo json_encode([
+                        "success" => $ok,
+                        "mensaje" => $ok
+                            ? "Usuario eliminado definitivamente"
+                            : "No se puede eliminar: este usuario tiene pedidos registrados en la BBDD."
+                    ]);
+                }
+            }
+
+        } else {
+            http_response_code(405);
+            echo json_encode(["success" => false, "mensaje" => "Método HTTP no permitido"]);
         }
 
-        // Cortamos la ejecución de PHP aquí mismo para que no se imprima HTML debajo del JSON
         exit();
     }
 
     private function verificarAdmin($responderConJson = false)
     {
-        // 1. Comprobamos si el usuario ha iniciado sesión Y su rol es 'admin'
         $esAdmin = isset($_SESSION['usuario']) && ($_SESSION['usuario']['rol'] ?? '') === 'admin';
 
-        // 2. Si NO cumple ambas cosas, bloqueamos el paso:
         if (!$esAdmin) {
             if ($responderConJson) {
-                // Si venimos de api(), respondemos en formato JSON para JavaScript
                 header('Content-Type: application/json; charset=utf-8');
                 http_response_code(403);
                 echo json_encode([
@@ -102,7 +247,6 @@ class adminController
                     "mensaje" => "Acceso denegado: se requieren permisos de administrador."
                 ]);
             } else {
-                // Si venimos de index(), redirigimos al formulario de login
                 header("Location: index.php?controller=usuario&action=login");
             }
             exit();
