@@ -8,12 +8,39 @@
     }
     .admin-header {
         text-align: center;
-        margin-bottom: 2.5rem;
+        margin-bottom: 1.8rem;
         padding-bottom: 1rem;
         border-bottom: 2px solid #c5a059;
     }
     .admin-header h1 { color: #e6c27a; font-size: 2rem; margin-bottom: 0.4rem; }
     .admin-header p { color: #b8c2b9; }
+
+    /* PESTAÑAS DE NAVEGACIÓN */
+    .admin-tabs {
+        display: flex;
+        gap: 0.8rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 2rem;
+    }
+    .tab-btn {
+        background: #101b16;
+        color: #d6cfc2;
+        border: 1px solid rgba(197, 160, 89, 0.4);
+        padding: 0.7rem 1.3rem;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .tab-btn:hover, .tab-btn.active {
+        background: linear-gradient(135deg, #d4af37, #aa8220);
+        color: #101b16;
+        border-color: #e6c27a;
+    }
+    .admin-tab-content { display: none; }
+    .admin-tab-content.active { display: block; }
+
     .admin-grid {
         display: grid;
         grid-template-columns: 360px 1fr;
@@ -124,173 +151,238 @@
     .btn-toggle { background: rgba(52, 152, 219, 0.2); color: #85c1e9; border-color: #2980b9; }
     .btn-danger { background: rgba(192, 57, 43, 0.25); color: #f1948a; border-color: #c0392b; }
     .msg-api { margin-top: 0.8rem; font-weight: bold; text-align: center; font-size: 0.9rem; }
+
+    /* DESGLOSE DE PLATOS E INGREDIENTES EN PEDIDOS */
+    .pedido-plato {
+        background: rgba(11, 19, 15, 0.75);
+        border-left: 3px solid #c5a059;
+        padding: 0.45rem 0.7rem;
+        margin-bottom: 0.45rem;
+        border-radius: 4px;
+        font-size: 0.88rem;
+    }
+    .pedido-ingredientes-list {
+        margin: 0.25rem 0 0 1rem;
+        padding: 0;
+        list-style: disc;
+        color: #b8c2b9;
+        font-size: 0.8rem;
+    }
+    .select-estado-pedido {
+        background: #0b130f;
+        color: #e6c27a;
+        border: 1px solid #c5a059;
+        border-radius: 6px;
+        padding: 0.35rem 0.5rem;
+        font-weight: 600;
+    }
 </style>
 
 <section class="admin-panel">
     <header class="admin-header">
         <h1>⚔️ Panel de Administración · Posada de Hyrule</h1>
-        <p>CRUD completo mediante API REST (GET · POST · PUT · PATCH · DELETE)</p>
     </header>
 
+    <!-- BOTONERA DE PESTAÑAS -->
+    <nav class="admin-tabs">
+        <button type="button" class="tab-btn active" onclick="cambiarPestanaAdmin('tab-ingredientes', this)">🌿 Ingredientes</button>
+        <button type="button" class="tab-btn" onclick="cambiarPestanaAdmin('tab-productos', this)">🍲 Productos</button>
+        <button type="button" class="tab-btn" onclick="cambiarPestanaAdmin('tab-usuarios', this)">🛡️ Usuarios</button>
+        <button type="button" class="tab-btn" onclick="cambiarPestanaAdmin('tab-pedidos', this)">🧾 Pedidos</button>
+    </nav>
+
     <!-- SECCIÓN 1: GESTIÓN DE INGREDIENTES -->
-    <div class="admin-grid">
-        <div class="admin-card">
-            <h2 id="titulo-form-ingrediente">🌿 Añadir Ingrediente</h2>
-            <form id="form-ingrediente" class="admin-form">
-                <input type="hidden" id="ing-id" value="">
+    <div id="tab-ingredientes" class="admin-tab-content active">
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h2 id="titulo-form-ingrediente">🌿 Añadir Ingrediente</h2>
+                <form id="form-ingrediente" class="admin-form">
+                    <input type="hidden" id="ing-id" value="">
 
-                <div class="form-group">
-                    <label for="ing-nombre">Nombre del ingrediente</label>
-                    <input type="text" id="ing-nombre" required placeholder="Ej: Trufa vivaz">
-                </div>
+                    <div class="form-group">
+                        <label for="ing-nombre">Nombre del ingrediente</label>
+                        <input type="text" id="ing-nombre" required placeholder="Ej: Trufa vivaz">
+                    </div>
 
-                <div class="form-group">
-                    <label for="ing-precio">Precio Extra (€)</label>
-                    <input type="number" step="0.01" min="0" id="ing-precio" required value="0.50">
-                </div>
+                    <div class="form-group">
+                        <label for="ing-precio">Precio Extra (€)</label>
+                        <input type="number" step="0.01" min="0" id="ing-precio" required value="0.50">
+                    </div>
 
-                <button type="submit" id="btn-submit-ing" class="btn-hyrule btn-gold">Guardar Ingrediente</button>
-                <button type="button" id="btn-cancel-ing" class="btn-hyrule btn-cancel" onclick="resetFormIngrediente()">Cancelar edición</button>
-                <div id="mensaje-api-ing" class="msg-api"></div>
-            </form>
-        </div>
+                    <button type="submit" id="btn-submit-ing" class="btn-hyrule btn-gold">Guardar Ingrediente</button>
+                    <button type="button" id="btn-cancel-ing" class="btn-hyrule btn-cancel" onclick="resetFormIngrediente()">Cancelar edición</button>
+                    <div id="mensaje-api-ing" class="msg-api"></div>
+                </form>
+            </div>
 
-        <div class="admin-card">
-            <h2>🧪 Listado de Ingredientes</h2>
-            <table class="hyrule-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Precio Extra</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-ingredientes">
-                    <tr><td colspan="5">Cargando provisiones...</td></tr>
-                </tbody>
-            </table>
+            <div class="admin-card">
+                <h2>🧪 Listado de Ingredientes</h2>
+                <table class="hyrule-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Precio Extra</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-ingredientes">
+                        <tr><td colspan="5">Cargando provisiones...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <!-- SECCIÓN 2: GESTIÓN DE PRODUCTOS -->
-    <div class="admin-grid">
-        <div class="admin-card">
-            <h2 id="titulo-form-producto">🍲 Añadir Producto</h2>
-            <form id="form-producto" class="admin-form">
-                <input type="hidden" id="prod-id" value="">
-                <input type="hidden" id="prod-activo" value="1">
+    <div id="tab-productos" class="admin-tab-content">
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h2 id="titulo-form-producto">🍲 Añadir Producto</h2>
+                <form id="form-producto" class="admin-form">
+                    <input type="hidden" id="prod-id" value="">
+                    <input type="hidden" id="prod-activo" value="1">
 
-                <div class="form-group">
-                    <label for="prod-categoria">Categoría</label>
-                    <select id="prod-categoria" required>
-                        <option value="1">1 - Carnes</option>
-                        <option value="2">2 - Bebida</option>
-                        <option value="3">3 - Arroces</option>
-                        <option value="4">4 - Empanados</option>
-                        <option value="5">5 - Especiales</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="prod-categoria">Categoría</label>
+                        <select id="prod-categoria" required>
+                            <option value="1">1 - Carnes</option>
+                            <option value="2">2 - Bebida</option>
+                            <option value="3">3 - Arroces</option>
+                            <option value="4">4 - Empanados</option>
+                            <option value="5">5 - Especiales</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="prod-nombre">Nombre del plato</label>
-                    <input type="text" id="prod-nombre" required placeholder="Ej: Estofado de Kolog">
-                </div>
+                    <div class="form-group">
+                        <label for="prod-nombre">Nombre del plato</label>
+                        <input type="text" id="prod-nombre" required placeholder="Ej: Estofado de Kolog">
+                    </div>
 
-                <div class="form-group">
-                    <label for="prod-descripcion">Descripción</label>
-                    <textarea id="prod-descripcion" rows="2" placeholder="Descripción breve del plato"></textarea>
-                </div>
+                    <div class="form-group">
+                        <label for="prod-descripcion">Descripción</label>
+                        <textarea id="prod-descripcion" rows="2" placeholder="Descripción breve del plato"></textarea>
+                    </div>
 
-                <div class="form-group">
-                    <label for="prod-precio">Precio Base (€)</label>
-                    <input type="number" step="0.01" min="0.01" id="prod-precio" required value="8.50">
-                </div>
+                    <div class="form-group">
+                        <label for="prod-precio">Precio Base (€)</label>
+                        <input type="number" step="0.01" min="0.01" id="prod-precio" required value="8.50">
+                    </div>
 
-                <div class="form-group">
-                    <label for="prod-imagen">Archivo de imagen</label>
-                    <input type="text" id="prod-imagen" placeholder="Ej: carne_hyliana.png" value="default.png">
-                </div>
+                    <div class="form-group">
+                        <label for="prod-imagen">Archivo de imagen</label>
+                        <input type="text" id="prod-imagen" placeholder="Ej: carne_hyliana.png" value="default.png">
+                    </div>
 
-                <button type="submit" id="btn-submit-prod" class="btn-hyrule btn-gold">Guardar Producto</button>
-                <button type="button" id="btn-cancel-prod" class="btn-hyrule btn-cancel" onclick="resetFormProducto()">Cancelar edición</button>
-                <div id="mensaje-api-prod" class="msg-api"></div>
-            </form>
-        </div>
+                    <button type="submit" id="btn-submit-prod" class="btn-hyrule btn-gold">Guardar Producto</button>
+                    <button type="button" id="btn-cancel-prod" class="btn-hyrule btn-cancel" onclick="resetFormProducto()">Cancelar edición</button>
+                    <div id="mensaje-api-prod" class="msg-api"></div>
+                </form>
+            </div>
 
-        <div class="admin-card">
-            <h2>📜 Carta de Productos</h2>
-            <table class="hyrule-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Cat.</th>
-                        <th>Producto</th>
-                        <th>Precio</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-productos">
-                    <tr><td colspan="6">Cargando carta...</td></tr>
-                </tbody>
-            </table>
+            <div class="admin-card">
+                <h2>📜 Carta de Productos</h2>
+                <table class="hyrule-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cat.</th>
+                            <th>Producto</th>
+                            <th>Precio</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-productos">
+                        <tr><td colspan="6">Cargando carta...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</section>
-<!-- SECCIÓN 3: GESTIÓN DE USUARIOS -->
-    <div class="admin-grid">
-        <div class="admin-card">
-            <h2 id="titulo-form-usuario">👤 Añadir Usuario</h2>
-            <form id="form-usuario" class="admin-form">
-                <input type="hidden" id="usuario-id" value="">
-                <input type="hidden" id="usuario-activo" value="1">   
 
-                <div class="form-group">
-                    <label for="usuario-nombre">Nombre</label>
-                    <input type="text" id="usuario-nombre" required placeholder="Nombre del usuario">
-                </div>
+    <!-- SECCIÓN 3: GESTIÓN DE USUARIOS -->
+    <div id="tab-usuarios" class="admin-tab-content">
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h2 id="titulo-form-usuario">👤 Añadir Usuario</h2>
+                <form id="form-usuario" class="admin-form">
+                    <input type="hidden" id="usuario-id" value="">
+                    <input type="hidden" id="usuario-activo" value="1">   
 
-                <div class="form-group">
-                    <label for="usuario-email">Email</label>
-                    <input type="email" id="usuario-email" required placeholder="correo@hyrule.com">
-                </div>
+                    <div class="form-group">
+                        <label for="usuario-nombre">Nombre</label>
+                        <input type="text" id="usuario-nombre" required placeholder="Nombre del usuario">
+                    </div>
 
-                <div class="form-group">
-                    <label for="usuario-contrasena">Contraseña</label>
-                    <input type="password" id="usuario-contrasena" required placeholder="Contraseña (dejar en blanco al editar si no cambia)">
-                </div>
+                    <div class="form-group">
+                        <label for="usuario-email">Email</label>
+                        <input type="email" id="usuario-email" required placeholder="correo@hyrule.com">
+                    </div>
 
-                <div class="form-group">
-                    <label for="usuario-rol">Rol</label>
-                    <select id="usuario-rol" required>
-                        <option value="usuario">usuario</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="usuario-contrasena">Contraseña</label>
+                        <input type="password" id="usuario-contrasena" required placeholder="Contraseña (dejar en blanco al editar si no cambia)">
+                    </div>
 
-                <button type="submit" id="btn-submit-usuario" class="btn-hyrule btn-gold">Guardar Usuario</button>
-                <button type="button" id="btn-cancel-usuario" class="btn-hyrule btn-cancel" onclick="resetFormUsuario()">Cancelar edición</button>
-                <div id="mensaje-api-usuario" class="msg-api"></div>
-            </form>
+                    <div class="form-group">
+                        <label for="usuario-rol">Rol</label>
+                        <select id="usuario-rol" required>
+                            <option value="usuario">usuario</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" id="btn-submit-usuario" class="btn-hyrule btn-gold">Guardar Usuario</button>
+                    <button type="button" id="btn-cancel-usuario" class="btn-hyrule btn-cancel" onclick="resetFormUsuario()">Cancelar edición</button>
+                    <div id="mensaje-api-usuario" class="msg-api"></div>
+                </form>
+            </div>
+
+            <div class="admin-card">
+                <h2>🛡️ Listado de Usuarios</h2>
+                <table class="hyrule-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-usuarios">
+                        <tr><td colspan="6">Cargando viajeros...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
+    </div>
 
+    <!-- SECCIÓN 4: GESTIÓN DE PEDIDOS -->
+    <div id="tab-pedidos" class="admin-tab-content">
         <div class="admin-card">
-            <h2>🛡️ Listado de Usuarios</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h2 style="margin:0; border:none;">🧾 Registro de Pedidos de la Posada</h2>
+                <button type="button" class="btn-sm btn-edit" onclick="cargarPedidos()">🔄 Actualizar</button>
+            </div>
+            <div id="mensaje-api-pedido" class="msg-api" style="margin-bottom:0.8rem;"></div>
             <table class="hyrule-table">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nombre</th>
-                        <th>Email</th>
-                        <th>Rol</th>
+                        <th>Pedido</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Detalle del Pedido (Platos e Ingredientes)</th>
+                        <th>Total</th>
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-usuarios">
-                    <tr><td colspan="6">Cargando viajeros...</td></tr>
+                <tbody id="tabla-pedidos">
+                    <tr><td colspan="7">Cargando comandas...</td></tr>
                 </tbody>
             </table>
         </div>

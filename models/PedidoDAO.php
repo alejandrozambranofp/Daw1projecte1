@@ -19,7 +19,6 @@ class PedidoDAO
             $stmtPrecioIng = $con->prepare("SELECT precio_extra FROM ingredientes WHERE id = ?");
 
             // 1. INSERTAR CABECERA EN 'pedidos'
-            // (estado='pendiente', fecha_pedido=CURRENT_TIMESTAMP, descuento=0.00, metodo_pago='simulado', estado_pago='pendiente' van por defecto)
             $sqlPedido = "INSERT INTO pedidos (usuario_id, subtotal, total, estado_pago) VALUES (?, ?, ?, 'pagado')";
             $stmtPedido = $con->prepare($sqlPedido);
             $stmtPedido->bind_param("idd", $usuarioId, $totalPedido, $totalPedido);
@@ -85,8 +84,8 @@ class PedidoDAO
 
             return $pedidoId;
 
-        } catch (Exception $e) {
-            // Si algo falló, deshacemos todo para no dejar datos corruptos en MySQL
+        } catch (Throwable $e) {
+            // Si algo falló (excepción SQL o error de ejecución), deshacemos todo
             $con->rollback();
             $con->close();
             return false;
@@ -111,4 +110,111 @@ class PedidoDAO
         $con->close();
         return $pedidos;
     }
+
+    /**
+     * GET (Admin): Devuelve todos los pedidos con los datos del usuario, sus líneas (pedido_detalle)
+     * y los ingredientes/extras de cada línea (pedido_detalle_ingrediente)
+     */
+    public static function getAllConDetalles()
+    {
+        $con = DataBase::connect();
+
+        // 1. Cabecera de pedidos + nombre y email del cliente
+        $sqlPedidos = "SELECT p.*, u.nombre AS usuario_nombre, u.email AS usuario_email
+                       FROM pedidos p
+                       LEFT JOIN usuarios u ON p.usuario_id = u.id
+                       ORDER BY p.fecha_pedido DESC, p.id DESC";
+        $resPedidos = $con->query($sqlPedidos);
+
+        $stmtDetalles = $con->prepare("SELECT * FROM pedido_detalle WHERE pedido_id = ?");
+        $stmtIngredientes = $con->prepare("SELECT * FROM pedido_detalle_ingrediente WHERE pedido_detalle_id = ?");
+
+        $pedidos = [];
+        while ($pedido = $resPedidos->fetch_assoc()) {
+            $pedidoId = (int) $pedido['id'];
+
+            // 2. Líneas de platos del pedido
+            $stmtDetalles->bind_param("i", $pedidoId);
+            $stmtDetalles->execute();
+            $resDet = $stmtDetalles->get_result();
+
+            $detalles = [];
+            while ($det = $resDet->fetch_assoc()) {
+                $detalleId = (int) $det['id'];
+
+                // 3. Ingredientes de cada plato
+                $stmtIngredientes->bind_param("i", $detalleId);
+                $stmtIngredientes->execute();
+                $resIng = $stmtIngredientes->get_result();
+
+                $ingredientes = [];
+                while ($ing = $resIng->fetch_assoc()) {
+                    $ingredientes[] = $ing;
+                }
+
+                $det['ingredientes'] = $ingredientes;
+                $detalles[] = $det;
+            }
+
+            $pedido['detalles'] = $detalles;
+            $pedidos[] = $pedido;
+        }
+
+        $con->close();
+        return $pedidos;
+    }
+
+    /**
+     * PATCH: Cambia el estado de un pedido ('pendiente', 'preparando', 'entregado', 'cancelado')
+     */
+    public static function cambiarEstado($id, $estado)
+    {
+        $estadosValidos = ['pendiente', 'preparando', 'entregado', 'cancelado'];
+        if (!in_array($estado, $estadosValidos)) {
+            return false;
+        }
+
+        $con = DataBase::connect();
+        $stmt = $con->prepare("UPDATE pedidos SET estado = ? WHERE id = ?");
+        $stmt->bind_param("si", $estado, $id);
+        $ok = $stmt->execute();
+
+        $stmt->close();
+        $con->close();
+        return $ok;
+    }
+
+    /**
+     * DELETE: Elimina un pedido y sus detalles/ingredientes en transacción
+     */
+    public static function deleteFisico($id)
+    {
+        $con = DataBase::connect();
+        $con->begin_transaction();
+
+        try {
+            $stmtIng = $con->prepare("DELETE pdi FROM pedido_detalle_ingrediente pdi
+                                      INNER JOIN pedido_detalle pd ON pdi.pedido_detalle_id = pd.id
+                                      WHERE pd.pedido_id = ?");
+            $stmtIng->bind_param("i", $id);
+            $stmtIng->execute();
+
+            $stmtDet = $con->prepare("DELETE FROM pedido_detalle WHERE pedido_id = ?");
+            $stmtDet->bind_param("i", $id);
+            $stmtDet->execute();
+
+            $stmtPed = $con->prepare("DELETE FROM pedidos WHERE id = ?");
+            $stmtPed->bind_param("i", $id);
+            $stmtPed->execute();
+
+            $con->commit();
+            $con->close();
+            return true;
+        } catch (Throwable $e) {
+            $con->rollback();
+            $con->close();
+            return false;
+        }
+    }
+
 }

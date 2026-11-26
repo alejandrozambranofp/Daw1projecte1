@@ -2,6 +2,7 @@
 require_once "models/productoDAO.php";
 require_once "models/IngredienteDAO.php";
 require_once "models/UsuarioDAO.php";
+require_once "models/PedidoDAO.php";
 
 class adminController
 {
@@ -33,6 +34,9 @@ class adminController
 
             } elseif ($funcion === "usuarios") {
                 echo json_encode(UsuarioDAO::getAll());
+
+            } elseif ($funcion === "pedidos") {
+                echo json_encode(PedidoDAO::getAllConDetalles());
 
             } else {
                 http_response_code(400);
@@ -183,6 +187,16 @@ class adminController
                     "success" => false,
                     "mensaje" => "La tabla usuarios no tiene columna 'activo'; usa Editar para cambiar el rol o Eliminar."
                 ]);
+
+            } elseif ($funcion === "cambiarEstadoPedido") {
+                $id     = (int) ($datos['id'] ?? 0);
+                $estado = trim($datos['estado'] ?? '');
+
+                $ok = PedidoDAO::cambiarEstado($id, $estado);
+                echo json_encode([
+                    "success" => $ok,
+                    "mensaje" => $ok ? "Estado del pedido actualizado a '$estado'" : "Error al cambiar estado del pedido"
+                ]);
             }
 
         // =========================================================================
@@ -224,6 +238,14 @@ class adminController
                             : "No se puede eliminar: este usuario tiene pedidos registrados en la BBDD."
                     ]);
                 }
+
+            } elseif ($funcion === "eliminarPedido") {
+                $id = (int) ($datos['id'] ?? 0);
+                $ok = PedidoDAO::deleteFisico($id);
+                echo json_encode([
+                    "success" => $ok,
+                    "mensaje" => $ok ? "Pedido eliminado correctamente" : "Error al eliminar el pedido"
+                ]);
             }
 
         } else {
