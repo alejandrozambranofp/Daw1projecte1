@@ -55,10 +55,29 @@ class PedidoDAO
 
                 // 3. INSERTAR LOS INGREDIENTES DE ESTE PLATO EN 'pedido_detalle_ingrediente'
                 if (!empty($item['ingredientes'])) {
+                    // Agrupamos por ingrediente_id para evitar duplicados si un ingrediente viene como base y como extra
+                    $ingredientesAgrupados = [];
                     foreach ($item['ingredientes'] as $ing) {
-                        $ingId     = (int) $ing['id'];
-                        $ingNombre = $ing['nombre'];
-                        $ingCant   = (int) $ing['cantidad'];
+                        $ingId   = (int) $ing['id'];
+                        $ingCant = (int) ($ing['cantidad'] ?? 1);
+
+                        if ($ingId <= 0 || $ingCant <= 0) {
+                            continue;
+                        }
+
+                        if (!isset($ingredientesAgrupados[$ingId])) {
+                            $ingredientesAgrupados[$ingId] = [
+                                'nombre'   => $ing['nombre'],
+                                'cantidad' => $ingCant
+                            ];
+                        } else {
+                            $ingredientesAgrupados[$ingId]['cantidad'] += $ingCant;
+                        }
+                    }
+
+                    foreach ($ingredientesAgrupados as $ingId => $ingData) {
+                        $ingNombre = $ingData['nombre'];
+                        $ingCant   = $ingData['cantidad'];
 
                         // Consultamos su precio extra en la BBDD
                         $stmtPrecioIng->bind_param("i", $ingId);
@@ -68,7 +87,13 @@ class PedidoDAO
 
                         // Definimos la acción y el coste extra según si venía incluido de serie o es añadido
                         $esBase = in_array($ingId, $ingredientesBase);
-                        $accion = $esBase ? ($ingCant > 1 ? "incluido + extra (x$ingCant)" : "incluido") : "extra (x$ingCant)";
+
+                        if ($esBase && $ingCant === 1) {
+                            $accion = "incluido";
+                        } else {
+                            $accion = "extra (x$ingCant)";
+                        }
+
                         $unidadesCobrables = max(0, $ingCant - ($esBase ? 1 : 0));
                         $costeExtraTotal = $unidadesCobrables * $precioExtraUnitario;
 

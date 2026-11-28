@@ -176,6 +176,39 @@
         padding: 0.35rem 0.5rem;
         font-weight: 600;
     }
+
+    /* BARRA DE FILTRO AVANZADO DE PEDIDOS */
+    .filtros-pedidos-bar {
+        display: flex;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0.85rem;
+        background: rgba(11, 19, 15, 0.75);
+        border: 1px solid rgba(197, 160, 89, 0.25);
+        border-radius: 8px;
+    }
+    .filtros-pedidos-bar input,
+    .filtros-pedidos-bar select {
+        padding: 0.55rem 0.8rem;
+        background-color: #0b130f;
+        border: 1px solid #3c5447;
+        border-radius: 6px;
+        color: #ffffff;
+        font-family: inherit;
+    }
+    .filtros-pedidos-bar input { flex: 1; min-width: 240px; }
+    .filtros-pedidos-bar input:focus,
+    .filtros-pedidos-bar select:focus {
+        outline: none;
+        border-color: #e6c27a;
+    }
+    .contador-pedidos-txt {
+        font-size: 0.85rem;
+        color: #b8c2b9;
+        margin-bottom: 0.8rem;
+    }
 </style>
 
 <section class="admin-panel">
@@ -369,6 +402,30 @@
                 <button type="button" class="btn-sm btn-edit" onclick="cargarPedidos()">🔄 Actualizar</button>
             </div>
             <div id="mensaje-api-pedido" class="msg-api" style="margin-bottom:0.8rem;"></div>
+
+            <!-- BARRA DE FILTRO AVANZADO DOM -->
+            <div class="filtros-pedidos-bar">
+                <input 
+                    type="text" 
+                    id="buscador-pedidos" 
+                    placeholder="🔍 Buscar por código (HYR-0001), cliente o correo..."
+                >
+
+                <select id="filtro-estado-pedidos">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="preparando">Preparando</option>
+                    <option value="entregado">Entregado</option>
+                    <option value="cancelado">Cancelado</option>
+                </select>
+
+                <button type="button" id="btn-limpiar-pedidos" class="btn-sm btn-edit">
+                    ✖ Limpiar
+                </button>
+            </div>
+
+            <p id="contador-pedidos" class="contador-pedidos-txt"></p>
+
             <table class="hyrule-table">
                 <thead>
                     <tr>
@@ -389,4 +446,8 @@
     </div>
 </section>
 
+<script src="js/admin/ingredientes.js"></script>
+<script src="js/admin/productos.js"></script>
+<script src="js/admin/usuarios.js"></script>
+<script src="js/admin/pedidos.js"></script>
 <script src="js/script.js"></script>

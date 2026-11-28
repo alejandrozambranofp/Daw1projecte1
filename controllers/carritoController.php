@@ -55,8 +55,9 @@ class carritoController
                     // Si el usuario envió una cantidad para este ingrediente la leemos; si no, es 0
                     $cantidadElegida = isset($ingredientesEnviados[$idIng]) ? (int) $ingredientesEnviados[$idIng] : 0;
 
-                    // Evitamos valores negativos manipulados desde el navegador
+                    // Evitamos valores negativos o superiores al máximo permitido (5) manipulados desde el navegador
                     if ($cantidadElegida < 0) $cantidadElegida = 0;
+                    if ($cantidadElegida > 5) $cantidadElegida = 5;
 
                     // Comprobamos si este ingrediente venía incluido por defecto (1 unidad gratis) o es extra (0 gratis)
                     $cantidadGratis = in_array($idIng, $ingredientesBase) ? 1 : 0;
